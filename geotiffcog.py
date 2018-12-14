@@ -124,7 +124,6 @@ def main(path, output):
     count = 0
     for path, subdirs, files in os.walk(gtiff_path):
         for fname in files:
-            print(fname)
             if fname.endswith('.tif'):
                 f_name = os.path.join(path, fname)
                 logging.info("Reading %s", basename(f_name))
