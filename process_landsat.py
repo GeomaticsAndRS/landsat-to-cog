@@ -28,6 +28,7 @@ OUT_PATH = 'test'
 QUEUE = os.environ.get('QUEUE', 'landsat-to-cog-queue-test')
 
 # These probably don't need changing
+LIMIT = int(os.environ.get('LIMIT', 100))
 WORKDIR = os.environ.get('WORKDIR', 'data/download')
 OUTDIR = os.environ.get('OUTDIR', 'data/out')
 DO_TEST = False
@@ -39,8 +40,6 @@ DO_CLEANUP = DO_CLEANUP == "True"
 
 
 if DO_TEST:
-    LIMIT = 10
-else:
     LIMIT = 10
 
 # Set up some AWS stuff
@@ -114,7 +113,7 @@ def process_one(overwrite=False, cleanup=False, test=False):
     # Get next file
     file_to_process = None
     messages = queue.receive_messages(
-        ChangeMessageVisibility=1000,
+        VisibilityTimeout=1000,
         MaxNumberOfMessages=1
     )
     message = None
@@ -149,7 +148,7 @@ def process_one(overwrite=False, cleanup=False, test=False):
     # Handle metadata
     xml_file = os.path.join(WORKDIR, get_xmlfile(WORKDIR))
     metadata = get_metadata(xml_file)
-    out_file_path = OUT_PATH + '/' + metadata['datetime'].strftime("%Y/%m/%d")
+    out_file_path = OUT_PATH + '/' + metadata['satellite'] + '/' + metadata['datetime'].strftime("%Y/%m/%d")
 
     # TODO: check whether we've processed this file yet
     processed_already = False
@@ -205,7 +204,7 @@ def process_one(overwrite=False, cleanup=False, test=False):
 
 def get_items():
     count = 0
-    logging.info("Adding items from: {}/{} to the queue {}".format(BUCKET, PATH, QUEUE))
+    logging.info("Adding {} items from: {}/{} to the queue {}".format(LIMIT, BUCKET, PATH, QUEUE))
     items = get_matching_s3_keys(BUCKET, PATH)
     for item in items:
         count += 1
