@@ -7,6 +7,7 @@ import re
 from xml.etree import ElementTree
 from os.path import join as pjoin, basename, dirname
 import shutil
+import json
 
 import boto3
 
@@ -30,13 +31,17 @@ QUEUE = os.environ.get('QUEUE', 'landsat-to-cog-queue-test')
 WORKDIR = os.environ.get('WORKDIR', 'data/download')
 OUTDIR = os.environ.get('OUTDIR', 'data/out')
 DO_TEST = False
-DO_OVERWRITE = os.environ.get('OVERWRITE', True)
-DO_CLEANUP = os.environ.get('CLEANUP', False)
+DO_OVERWRITE = os.environ.get('OVERWRITE', "True")
+DO_CLEANUP = os.environ.get('CLEANUP', "False")
+
+DO_OVERWRITE = DO_OVERWRITE == "True"
+DO_CLEANUP = DO_CLEANUP == "True"
+
 
 if DO_TEST:
     LIMIT = 10
 else:
-    LIMIT = 9999999
+    LIMIT = 10
 
 # Set up some AWS stuff
 s3 = boto3.client('s3')
@@ -108,7 +113,10 @@ def process_one(overwrite=False, cleanup=False, test=False):
     logging.debug("Starting to process")
     # Get next file
     file_to_process = None
-    messages = queue.receive_messages()
+    messages = queue.receive_messages(
+        ChangeMessageVisibility=1000,
+        MaxNumberOfMessages=1
+    )
     message = None
     if len(messages) > 0 and not test:
         # Example: from-tony/alex1129/espa-tonybutzer@gmail.com-11292018-115452-258/LE072110481999070901T1-SC20181129142650.tar.gz
@@ -197,7 +205,7 @@ def process_one(overwrite=False, cleanup=False, test=False):
 
 def get_items():
     count = 0
-    print(BUCKET, PATH)
+    logging.info("Adding items from: {}/{} to the queue {}".format(BUCKET, PATH, QUEUE))
     items = get_matching_s3_keys(BUCKET, PATH)
     for item in items:
         count += 1
@@ -209,10 +217,12 @@ def get_items():
 
 
 def count_messages():
-    print("There are {} messages on the queue.".format(queue.attributes["ApproximateNumberOfMessages"]))
+    logging.info("There are {} messages on the queue.".format(queue.attributes["ApproximateNumberOfMessages"]))
+    return int(queue.attributes["ApproximateNumberOfMessages"])
 
 
 if __name__ == "__main__": 
-    count_messages()
-    # get_items()
-    process_one(test=DO_TEST, overwrite=DO_OVERWRITE, cleanup=DO_CLEANUP)
+    n_messages = count_messages()
+    while n_messages > 0:
+        process_one(test=DO_TEST, overwrite=DO_OVERWRITE, cleanup=DO_CLEANUP)
+        n_messages = count_messages()
