@@ -33,7 +33,7 @@ WORKDIR = os.environ.get('WORKDIR', 'data/download')
 OUTDIR = os.environ.get('OUTDIR', 'data/out')
 DO_TEST = False
 DO_OVERWRITE = os.environ.get('OVERWRITE', "True")
-DO_CLEANUP = os.environ.get('CLEANUP', "False")
+DO_CLEANUP = os.environ.get('CLEANUP', "True")
 
 DO_OVERWRITE = DO_OVERWRITE == "True"
 DO_CLEANUP = DO_CLEANUP == "True"
@@ -109,7 +109,7 @@ def get_xmlfile(directory):
 def process_one(overwrite=False, cleanup=False, test=False):
     process_failed = False
 
-    logging.debug("Starting to process")
+    logging.info("Starting up a run")
     # Get next file
     file_to_process = None
     messages = queue.receive_messages(
@@ -195,6 +195,7 @@ def process_one(overwrite=False, cleanup=False, test=False):
 
     # And we're finished
     if not process_failed:
+        logging.info("Finished processing and deleting the message.")
         message.delete()
     else:
         logging.warning("The process to download {} failed. Careful, this may stay on the list of jobs.".format(
@@ -204,7 +205,7 @@ def process_one(overwrite=False, cleanup=False, test=False):
 
 def get_items():
     count = 0
-    logging.info("Adding {} items from: {}/{} to the queue {}".format(LIMIT, BUCKET, PATH, QUEUE))
+    logging.info("Adding {} items from: {}/{} to the queue {}".format(LIMIT, mBUCKET, PATH, QUEUE))
     items = get_matching_s3_keys(BUCKET, PATH)
     for item in items:
         count += 1
