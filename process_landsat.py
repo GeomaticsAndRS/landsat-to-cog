@@ -14,7 +14,7 @@ import boto3
 from geotiffcog import run_command, _write_cogtiff, getfilename
 
 # Set us up some logging
-logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logging.getLogger('boto3').setLevel(logging.CRITICAL)
 logging.getLogger('botocore').setLevel(logging.CRITICAL)
 logging.getLogger('s3transfer').setLevel(logging.CRITICAL)
@@ -24,7 +24,7 @@ logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 BUCKET = os.environ.get('IN_BUCKET', 'frontiersi-odc-test')
 PATH = os.environ.get('IN_PATH', 'from-tony/alex1129')
 OUT_BUCKET = os.environ.get('OUT_BUCKET', BUCKET)
-OUT_PATH = 'test'
+OUT_PATH = os.environ.get('OUT_PATH', 'test')
 QUEUE = os.environ.get('QUEUE', 'landsat-to-cog-queue-test')
 
 # These probably don't need changing
