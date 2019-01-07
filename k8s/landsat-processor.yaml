@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landsat-processor-deployment
+  labels:
+    app: python-landsat-processor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: python-landsat-processor
+  template:
+    metadata:
+      labels:
+        app: python-landsat-processor
+    spec:
+      containers:
+      - name: landsat-processor
+        image: alexgleith/landsat-processor
+        env:
+        - name: IN_BUCKET
+          value: "frontiersi-odc-test"
+        - name: IN_PATH
+          value: "from-tony/alex1129"
+        - name: OUT_BUCKET
+          value: "frontiersi-odc-test"
+        - name: OUT_PATH
+          value: "test"  
+        - name: QUEUE
+          value: "landsat-to-cog-queue-test"
+        - name: CLEANUP
+          value: "True"

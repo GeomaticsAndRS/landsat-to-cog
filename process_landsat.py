@@ -8,10 +8,22 @@ from xml.etree import ElementTree
 from os.path import join as pjoin, basename, dirname
 import shutil
 import json
+import subprocess
 
 import boto3
+import botocore
 
-from geotiffcog import run_command, _write_cogtiff, getfilename
+from cogeo import cog_translate
+
+# COG profile
+default_profile = {'driver': 'GTiff',
+                    'interleave': 'pixel',
+                    'tiled': True,
+                    'blockxsize': 512,
+                    'blockysize': 512,
+                    'compress': 'DEFLATE',
+                    'predictor': 2,
+                    'zlevel': 9}
 
 # Set us up some logging
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
@@ -28,7 +40,6 @@ OUT_PATH = os.environ.get('OUT_PATH', 'test')
 QUEUE = os.environ.get('QUEUE', 'landsat-to-cog-queue-test')
 
 # These probably don't need changing
-LIMIT = int(os.environ.get('LIMIT', 100))
 WORKDIR = os.environ.get('WORKDIR', 'data/download')
 OUTDIR = os.environ.get('OUTDIR', 'data/out')
 DO_TEST = False
@@ -71,6 +82,9 @@ def get_matching_s3_keys(bucket, prefix='', suffix=''):
             break
 
 def get_metadata(local_file):
+    """
+    Returns the pertinent fields in the XML file from USGS as a dict.
+    """
     with open(local_file) as f:
         xmlstring = f.read()
     xmlstring = re.sub(r'\sxmlns="[^"]+"', '', xmlstring, count=1)
@@ -89,6 +103,9 @@ def get_metadata(local_file):
 
 
 def delete_files(file_path):
+    """
+    Delete all the files and directories below a directory.
+    """
     logging.info("Deleting files from {}".format(file_path))
     for the_file in os.listdir(file_path):
         a_file = os.path.join(file_path, the_file)
@@ -101,10 +118,57 @@ def delete_files(file_path):
 
 
 def get_xmlfile(directory):
+    """
+    Only returns the first XML file found in a directory. Somewhat
+    dodgy if there's more than one, so clean out your workspace, folks!
+    """
     files = os.listdir(directory)
     for f in files:
         if ".xml" in f:
             return f
+
+
+def run_command(command, work_dir): 
+    """ 
+    A simple utility to execute a subprocess command. 
+    """ 
+    try:
+        subprocess.check_call(command, stderr=subprocess.STDOUT, cwd=work_dir)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+
+
+def check_dir(fname):
+    file_name = fname.split('/')
+    rel_path = pjoin(*file_name[-2:])
+    return rel_path
+
+
+def getfilename(fname, outdir):
+    """ To create a temporary filename to add overviews and convert to COG
+        and create a file name just as source but without '.TIF' extension
+    """
+    rel_path = check_dir(fname)
+    out_fname = pjoin(outdir, rel_path)
+
+    if not os.path.exists(dirname(out_fname)): 
+        os.makedirs(dirname(out_fname)) 
+    return out_fname
+
+# from https://stackoverflow.com/questions/33842944/check-if-a-key-exists-in-a-bucket-in-s3-using-boto3
+def check_processed(key):
+    try:
+        s3r.Object(BUCKET, key).load()
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "404":
+            # The object does not exist.
+            return False
+        else:
+            # Something else has gone wrong.
+            raise
+    else:
+        # The object does exist.
+        return True
 
 def process_one(overwrite=False, cleanup=False, test=False):
     process_failed = False
@@ -143,49 +207,69 @@ def process_one(overwrite=False, cleanup=False, test=False):
 
     # Unzip the file
     logging.info("Unzipping the file {} into {}".format(local_file, WORKDIR))
-    run_command(['tar', '-xzvf', local_file], WORKDIR)
+    try:
+        run_command(['tar', '-xzvf', local_file], WORKDIR)
+    except RuntimeError as e:
+        logging.error("Failed to untar the file with error: {}".format(e))
+        process_failed = True
 
     # Handle metadata
-    xml_file = os.path.join(WORKDIR, get_xmlfile(WORKDIR))
-    metadata = get_metadata(xml_file)
-    out_file_path = OUT_PATH + '/' + metadata['satellite'] + '/' + metadata['datetime'].strftime("%Y/%m/%d")
-
-    # TODO: check whether we've processed this file yet
-    processed_already = False
-
-    # # Process data
-    if overwrite and not processed_already:
-        out_files = []
-        gtiff_path = os.path.abspath(WORKDIR)
-        output_dir = os.path.abspath(OUTDIR)
-        count = 0
-        for path, subdirs, files in os.walk(gtiff_path):
-            for fname in files:
-                if fname.endswith('.tif') and '_sr_' in fname:
-                    f_name = os.path.join(path, fname)
-                    logging.info("Reading %s", basename(f_name))
-                    filename = getfilename(f_name, output_dir)
-                    out_files.append(filename)
-                    _write_cogtiff(f_name, filename, output_dir)
-                    count = count+1
-                    logging.info("Writing COG to %s, %i", dirname(filename), count)
-
-        # Upload data
-        for out_file in out_files:
-            data = open(out_file, 'rb')
-            key = "{}/{}".format(out_file_path, basename(out_file))
-            logging.info("Uploading geotiff to {}".format(key))
-            s3r.Bucket(OUT_BUCKET).put_object(Key=key, Body=data)
+    if not process_failed:
+        xml_file = os.path.join(WORKDIR, get_xmlfile(WORKDIR))
+        metadata = get_metadata(xml_file)
+        out_file_path = OUT_PATH + '/' + metadata['satellite'] + '/' + metadata['datetime'].strftime("%Y/%m/%d")
+        xml_key = "{}/{}".format(out_file_path, basename(xml_file))
     
-        # If all went well, upload metadata
-        if len(out_files) > 0:
-            data = open(xml_file, 'rb')
-            key = "{}/{}".format(out_file_path, basename(xml_file))
-            logging.info("Uploading metadata file to {}".format(key))
-            s3r.Bucket(OUT_BUCKET).put_object(Key=key, Body=data)
+        # TODO: check whether we've processed this file yet
+        processed_already = check_processed(xml_key)
+        if processed_already:
+            logging.warning("This file has been processed already.")
+
+        # Process data
+        if overwrite or not processed_already:
+            out_files = []
+            gtiff_path = os.path.abspath(WORKDIR)
+            output_dir = os.path.abspath(OUTDIR)
+            count = 0
+            for path, subdirs, files in os.walk(gtiff_path):
+                for fname in files:
+                    if fname.endswith('.tif') and ('_sr_' in fname or '_qa' in fname):
+                        in_filename = os.path.join(path, fname)
+                        logging.info("Reading %s", basename(in_filename))
+                        out_filename = getfilename(in_filename, output_dir)
+                        out_files.append(out_filename)
+
+                        cog_translate(
+                            in_filename,
+                            out_filename,
+                            default_profile,
+                            overview_level=5,
+                            overview_resampling='average')
+                        
+                        # _write_cogtiff(f_name, filename, output_dir)
+                        count = count+1
+                        logging.info("Writing COG to %s, %i", dirname(out_filename), count)
+        
+            # If all went well, upload everything
+            if len(out_files) >= 7:
+                # Upload data
+                for out_file in out_files:
+                    data = open(out_file, 'rb')
+                    key = "{}/{}".format(out_file_path, basename(out_file))
+                    logging.info("Uploading geotiff to {}".format(key))
+                    s3r.Bucket(OUT_BUCKET).put_object(Key=key, Body=data)
+                
+                # Upload metadata
+                data = open(xml_file, 'rb')
+                logging.info("Uploading metadata file to {}".format(xml_key))
+                s3r.Bucket(OUT_BUCKET).put_object(Key=key, Body=data)
+            else:
+                logging.error("Only processed {} files. We need 8 or more for a valid dataset.".format(
+                    len(out_files)
+                ))
+                process_failed = True
         else:
-            logging.error("Failed to find any surface reflectance files... weird!")
-            process_failed = True
+            logging.warning("Not processing the file because the `DO_OVERWRITE` flag is not set.")
 
     # Cleanup
     if cleanup:
@@ -195,17 +279,17 @@ def process_one(overwrite=False, cleanup=False, test=False):
 
     # And we're finished
     if not process_failed:
-        logging.info("Finished processing and deleting the message.")
-        message.delete()
+        logging.info("Finished processing and now deleting the message.")
     else:
-        logging.warning("The process to download {} failed. Careful, this may stay on the list of jobs.".format(
+        logging.warning("The process to download {} FAILED!".format(
             local_file
         ))
+    message.delete()
 
 
-def get_items():
+def get_items(LIMIT=10):
     count = 0
-    logging.info("Adding {} items from: {}/{} to the queue {}".format(LIMIT, mBUCKET, PATH, QUEUE))
+    logging.info("Adding {} items from: {}/{} to the queue {}".format(LIMIT, BUCKET, PATH, QUEUE))
     items = get_matching_s3_keys(BUCKET, PATH)
     for item in items:
         count += 1
