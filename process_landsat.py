@@ -49,6 +49,14 @@ DO_CLEANUP = os.environ.get('CLEANUP', "True")
 DO_OVERWRITE = DO_OVERWRITE == "True"
 DO_CLEANUP = DO_CLEANUP == "True"
 
+# Log the environment...
+logging.info("Reading from {}/{} and writing to {}/{}".format(
+    BUCKET,
+    PATH,
+    OUT_BUCKET,
+    OUT_PATH
+))
+
 
 if DO_TEST:
     LIMIT = 10
@@ -159,10 +167,11 @@ def getfilename(fname, outdir):
         os.makedirs(dirname(out_fname)) 
     return out_fname
 
+
 # from https://stackoverflow.com/questions/33842944/check-if-a-key-exists-in-a-bucket-in-s3-using-boto3
 def check_processed(key):
     try:
-        s3r.Object(BUCKET, key).load()
+        s3r.Object(OUT_BUCKET, key).load()
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             # The object does not exist.
@@ -173,6 +182,7 @@ def check_processed(key):
     else:
         # The object does exist.
         return True
+
 
 def process_one(overwrite=False, cleanup=False, test=False):
     process_failed = False
