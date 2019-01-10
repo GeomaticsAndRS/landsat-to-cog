@@ -57,7 +57,7 @@ if DO_TEST:
 s3 = boto3.client('s3')
 
 s3r = boto3.resource('s3')
-sqs = boto3.resource('sqs', "ap-southeast-2")
+sqs = boto3.resource('sqs')
 queue = sqs.get_queue_by_name(QueueName=QUEUE)
 
 
@@ -93,10 +93,14 @@ def get_metadata(local_file):
 
     satellite = doc.find('.//satellite').text
     acquisition_date = doc.find('.//acquisition_date').text
+    pathrow = doc.find('global_metadata').find('wrs').attrib
 
     meta = {
         'datetime': datetime.datetime.strptime(acquisition_date, "%Y-%m-%d"),
-        'satellite': satellite
+        'satellite': satellite,
+        'path': pathrow['path'],
+        'row': pathrow['row']
+
     }
 
     return (meta)
@@ -217,10 +221,16 @@ def process_one(overwrite=False, cleanup=False, test=False):
     if not process_failed:
         xml_file = os.path.join(WORKDIR, get_xmlfile(WORKDIR))
         metadata = get_metadata(xml_file)
-        out_file_path = OUT_PATH + '/' + metadata['satellite'] + '/' + metadata['datetime'].strftime("%Y/%m/%d")
+        out_file_path = '{directory}/{satellite}/{path}/{row}/{date}'.format(
+            directory=OUT_PATH,
+            satellite=metadata['satellite'],
+            path=metadata['path'],
+            row=metadata['row'],
+            date=metadata['datetime'].strftime("%Y/%m/%d")
+        ) 
         xml_key = "{}/{}".format(out_file_path, basename(xml_file))
     
-        # TODO: check whether we've processed this file yet
+        # Check if we've already processed the file
         processed_already = check_processed(xml_key)
         if processed_already:
             logging.warning("This file has been processed already.")
@@ -262,7 +272,7 @@ def process_one(overwrite=False, cleanup=False, test=False):
                 # Upload metadata
                 data = open(xml_file, 'rb')
                 logging.info("Uploading metadata file to {}".format(xml_key))
-                s3r.Bucket(OUT_BUCKET).put_object(Key=key, Body=data)
+                s3r.Bucket(OUT_BUCKET).put_object(Key=xml_key, Body=data)
             else:
                 logging.error("Only processed {} files. We need 8 or more for a valid dataset.".format(
                     len(out_files)
@@ -287,17 +297,18 @@ def process_one(overwrite=False, cleanup=False, test=False):
     message.delete()
 
 
-def get_items(LIMIT=10):
+def get_items(LIMIT=10, filter=None):
     count = 0
     logging.info("Adding {} items from: {}/{} to the queue {}".format(LIMIT, BUCKET, PATH, QUEUE))
     items = get_matching_s3_keys(BUCKET, PATH)
     for item in items:
-        count += 1
-        if count >= LIMIT:
-            break
+        if filter and filter in item:
+            count += 1
+            if count >= LIMIT:
+                break
 
-        # Create a big list of items we're processing.
-        queue.send_message(MessageBody=item)
+            # Create a big list of items we're processing.
+            queue.send_message(MessageBody=item)
 
 
 def count_messages():

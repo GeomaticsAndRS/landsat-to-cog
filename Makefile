@@ -34,45 +34,9 @@ get-l8-example:
 unzip-l8-example:
 	cd data/raw && tar -xzvf $(word 2, $(subst /, ,$(L8_EXAMPLE)))
 
-select-l8-files: clear-dirs
-	cp data/raw/LC08*sr*.tif data/many/
-	cp data/raw/LC08*.xml data/many/
-
-clear-dirs:
-	-rm data/many/*
-	-rm -r data/out/*
-
-build:
-	docker-compose build
-
-process-one:
-	docker-compose run pygdal \
-		./geotiffcog.py --path /opt/data/one --output /opt/data/out
-
-process-many:
-	docker-compose run pygdal \
-		./geotiffcog.py --path /opt/data/many --output /opt/data/out
-
 test-example:
 	docker-compose run pygdal \
 		./process_landsat.py
-
-
-sync:
-	aws s3 sync \
-		--exclude "*.aux.xml" \
-		data/out/many s3://frontiersi-odc-test/firstcog
-
-sync-down:
-	aws s3 sync \
-		--exclude "*.aux.xml" \
-		s3://frontiersi-odc-test/firstcog data/out/many
-
-delete-rubbish:
-	aws s3 rm s3://frontiersi-odc-test/firstcog/ \
-		--recursive \
-		--exclude "*.*" \
-		--include "*.aux.xml"
 
 push:
 	docker build --tag alexgleith/landsat-processor .
