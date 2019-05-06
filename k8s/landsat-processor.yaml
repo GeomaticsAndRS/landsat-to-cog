@@ -34,3 +34,5 @@ spec:
           value: "odc-sandbox-data-processing-queue"
         - name: CLEANUP
           value: "True"
+        - name: UPLOAD
+          value: "True"

@@ -54,7 +54,7 @@ DO_UPLOAD = os.environ.get('UPLOAD', "True")
 
 DO_OVERWRITE = DO_OVERWRITE == "True"
 DO_CLEANUP = DO_CLEANUP == "True"
-DO_UPLOAD = DO_CLEANUP == "True"
+DO_UPLOAD = DO_UPLOAD == "True"
 
 # Flag for testing...
 DO_TEST = False
@@ -356,6 +356,9 @@ def count_messages():
 
 if __name__ == "__main__": 
     n_messages = count_messages()
+    logging.info("Upload is: {}, Overwrite is: {}, Cleanup is: {}".format(
+        DO_UPLOAD, DO_OVERWRITE, DO_CLEANUP
+    ))
     while n_messages > 0:
         process_one(test=DO_TEST, overwrite=DO_OVERWRITE, cleanup=DO_CLEANUP, upload=DO_UPLOAD)
         n_messages = count_messages()
