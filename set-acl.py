@@ -3,7 +3,7 @@ import boto3
 from process_landsat import get_matching_s3_keys
 
 BUCKET='frontiersi-odc-test'
-PATH='test'
+PATH='rwanda-test'
 client = boto3.client('s3')
 
 LIMIT=False

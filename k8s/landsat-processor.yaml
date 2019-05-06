@@ -14,19 +14,23 @@ spec:
       labels:
         app: python-landsat-processor
     spec:
+      nodeSelector:
+        kops.k8s.io/instancegroup: spot-nodes1
       containers:
       - name: landsat-processor
-        image: alexgleith/landsat-processor
+        image: crcsi/landsat-processor
         env:
+        - name: AWS_DEFAULT_REGION
+          value: us-west-2
         - name: IN_BUCKET
-          value: "frontiersi-odc-test"
+          value: "frontiersi-odc-data"
         - name: IN_PATH
-          value: "from-tony/alex1129"
+          value: "raw/fiji"
         - name: OUT_BUCKET
-          value: "frontiersi-odc-test"
+          value: "frontiersi-odc-data"
         - name: OUT_PATH
-          value: "test"  
+          value: "test"
         - name: QUEUE
-          value: "landsat-to-cog-queue-test"
+          value: "odc-sandbox-data-processing-queue"
         - name: CLEANUP
           value: "True"

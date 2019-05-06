@@ -1,29 +1,34 @@
 #!/usr/bin/env python3
 
 import datetime
+import json
 import logging
 import os
 import re
-from xml.etree import ElementTree
-from os.path import join as pjoin, basename, dirname
 import shutil
-import json
 import subprocess
+from os.path import basename, dirname
+from os.path import join as pjoin
+from xml.etree import ElementTree
+import copy
 
 import boto3
 import botocore
+import rasterio
 
 from cogeo import cog_translate
 
 # COG profile
-default_profile = {'driver': 'GTiff',
-                    'interleave': 'pixel',
-                    'tiled': True,
-                    'blockxsize': 512,
-                    'blockysize': 512,
-                    'compress': 'DEFLATE',
-                    'predictor': 2,
-                    'zlevel': 9}
+default_profile = {
+    'driver': 'GTiff',
+    'interleave': 'pixel',
+    'tiled': True,
+    'blockxsize': 512,
+    'blockysize': 512,
+    'compress': 'DEFLATE',
+    'predictor': 2,
+    'zlevel': 9
+}
 
 # Set us up some logging
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
@@ -34,7 +39,7 @@ logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 
 # Sort out variables
 BUCKET = os.environ.get('IN_BUCKET', 'frontiersi-odc-test')
-PATH = os.environ.get('IN_PATH', 'from-tony/alex1129')
+PATH = os.environ.get('IN_PATH', '')
 OUT_BUCKET = os.environ.get('OUT_BUCKET', BUCKET)
 OUT_PATH = os.environ.get('OUT_PATH', 'test')
 QUEUE = os.environ.get('QUEUE', 'landsat-to-cog-queue-test')
@@ -42,12 +47,17 @@ QUEUE = os.environ.get('QUEUE', 'landsat-to-cog-queue-test')
 # These probably don't need changing
 WORKDIR = os.environ.get('WORKDIR', 'data/download')
 OUTDIR = os.environ.get('OUTDIR', 'data/out')
-DO_TEST = False
+# These might need changing
 DO_OVERWRITE = os.environ.get('OVERWRITE', "True")
 DO_CLEANUP = os.environ.get('CLEANUP', "True")
+DO_UPLOAD = os.environ.get('UPLOAD', "True")
 
 DO_OVERWRITE = DO_OVERWRITE == "True"
 DO_CLEANUP = DO_CLEANUP == "True"
+DO_UPLOAD = DO_CLEANUP == "True"
+
+# Flag for testing...
+DO_TEST = False
 
 # Log the environment...
 logging.info("Reading from {}/{} and writing to {}/{}".format(
@@ -56,8 +66,9 @@ logging.info("Reading from {}/{} and writing to {}/{}".format(
     OUT_BUCKET,
     OUT_PATH
 ))
+logging.info("Getting items from the queue: {}".format(QUEUE))
 
-
+LIMIT = 9999
 if DO_TEST:
     LIMIT = 10
 
@@ -184,7 +195,7 @@ def check_processed(key):
         return True
 
 
-def process_one(overwrite=False, cleanup=False, test=False):
+def process_one(overwrite=False, cleanup=False, test=False, upload=True):
     process_failed = False
 
     logging.info("Starting up a run")
@@ -203,7 +214,7 @@ def process_one(overwrite=False, cleanup=False, test=False):
     else:
         logging.warning("No messages!")
         if test:
-            file_to_process = "from-tony/alex1129/espa-tonybutzer@gmail.com-11292018-115452-258/LE072110482001051101T1-SC20181129141358.tar.gz"
+            file_to_process = "raw/fiji/espa-tonybutzer@gmail.com-05032019-012123-847/LE070750722000051501T1-SC20190503034411.tar.gz"
         else:
             logging.warning("Bailing because there's no messages and we're not testing.")
             return
@@ -259,30 +270,43 @@ def process_one(overwrite=False, cleanup=False, test=False):
                         out_filename = getfilename(in_filename, output_dir)
                         out_files.append(out_filename)
 
+                        cog_profile = copy.deepcopy(default_profile)
+
+                        # Transfer NODATA over if it's not pixel QA (which has no nodata)
+                        if not '_qa' in fname:
+                            src = rasterio.open(in_filename)
+                            logging.info("NODATA is: {}".format(src.nodata))
+                            if src.nodata and src.nodata is not 'None':
+                                cog_profile['nodata'] = int(src.nodata)
+
                         cog_translate(
                             in_filename,
                             out_filename,
-                            default_profile,
+                            cog_profile,
                             overview_level=5,
-                            overview_resampling='average')
-                        
+                            overview_resampling='average'
+                        )
+
                         # _write_cogtiff(f_name, filename, output_dir)
                         count = count+1
-                        logging.info("Writing COG to %s, %i", dirname(out_filename), count)
-        
+                        logging.info("Writing COG number {} to {}".format(count, dirname(out_filename)))
+
             # If all went well, upload everything
             if len(out_files) >= 7:
-                # Upload data
-                for out_file in out_files:
-                    data = open(out_file, 'rb')
-                    key = "{}/{}".format(out_file_path, basename(out_file))
-                    logging.info("Uploading geotiff to {}".format(key))
-                    s3r.Bucket(OUT_BUCKET).put_object(Key=key, Body=data)
-                
-                # Upload metadata
-                data = open(xml_file, 'rb')
-                logging.info("Uploading metadata file to {}".format(xml_key))
-                s3r.Bucket(OUT_BUCKET).put_object(Key=xml_key, Body=data)
+                if upload:
+                    # Upload data
+                    for out_file in out_files:
+                        data = open(out_file, 'rb')
+                        key = "{}/{}".format(out_file_path, basename(out_file))
+                        logging.info("Uploading geotiff to {}".format(key))
+                        s3r.Bucket(OUT_BUCKET).put_object(Key=key, Body=data)
+                    
+                    # Upload metadata
+                    data = open(xml_file, 'rb')
+                    logging.info("Uploading metadata file to {}".format(xml_key))
+                    s3r.Bucket(OUT_BUCKET).put_object(Key=xml_key, Body=data)
+                else:
+                    logging.warning("DO_UPLOAD is false, not uploading.")
             else:
                 logging.error("Only processed {} files. We need 8 or more for a valid dataset.".format(
                     len(out_files)
@@ -312,10 +336,14 @@ def get_items(LIMIT=10, filter=None):
     logging.info("Adding {} items from: {}/{} to the queue {}".format(LIMIT, BUCKET, PATH, QUEUE))
     items = get_matching_s3_keys(BUCKET, PATH)
     for item in items:
-        if filter and filter in item:
+        # logging.info("Adding item {} which is the {}st item".format(item, count))
+        if not filter or filter in item:
             count += 1
             if count >= LIMIT:
                 break
+
+            if count % 100 == 0:
+                logging.info("Pushed {} items...".format(count))
 
             # Create a big list of items we're processing.
             queue.send_message(MessageBody=item)
@@ -329,5 +357,5 @@ def count_messages():
 if __name__ == "__main__": 
     n_messages = count_messages()
     while n_messages > 0:
-        process_one(test=DO_TEST, overwrite=DO_OVERWRITE, cleanup=DO_CLEANUP)
+        process_one(test=DO_TEST, overwrite=DO_OVERWRITE, cleanup=DO_CLEANUP, upload=DO_UPLOAD)
         n_messages = count_messages()

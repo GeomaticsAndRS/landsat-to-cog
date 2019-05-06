@@ -39,5 +39,14 @@ test-example:
 		./process_landsat.py
 
 push:
-	docker build --tag alexgleith/landsat-processor .
-	docker push alexgleith/landsat-processor
+	docker build --tag crcsi/landsat-processor .
+	docker push crcsi/landsat-processor
+
+add-items:
+	AWS_DEFAULT_PROFILE=fsi-admin \
+	AWS_DEFAULT_REGION=us-west-2 \
+	IN_BUCKET=frontiersi-odc-data \
+	IN_PATH=raw/fiji \
+	QUEUE=odc-sandbox-data-processing-queue \
+	LIMIT=10 \
+	./add_to_queue.py
