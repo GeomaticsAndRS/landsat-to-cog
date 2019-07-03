@@ -3,13 +3,16 @@ services:
   pygdal:
     build: .
     environment:
-      - AWS_DEFAULT_REGION=ap-southeast-2
-      - AWS_ACCESS_KEY_ID=EXAMPLE
-      - AWS_SECRET_ACCESS_KEY=OTHEREXAMPLE
-      - AWS_SESSION_TOKEN=YOUMIGHTNOTWANTTHIS
+      - AWS_DEFAULT_REGION=us-west-2
+      - QUEUE=dsg-test-queue
+      - IN_BUCKET=deafrica-staging-west
+      - IN_PATH=L5-Ghana_original
+      - OUT_BUCKET=test-results-deafrica-staging-west
+      - OUT_PATH=L5-Ghana_original
       - CLEANUP=True
       - OVERWRITE=False
       - UPLOAD=False
       - IN_BUCKET=frontiersi-odc-data
+      - LIMIT=1
     volumes:
       - .:/opt

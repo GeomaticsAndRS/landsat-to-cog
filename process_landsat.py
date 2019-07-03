@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+0#!/usr/bin/env python3
 
 import datetime
 import json
@@ -57,7 +57,7 @@ DO_CLEANUP = DO_CLEANUP == "True"
 DO_UPLOAD = DO_UPLOAD == "True"
 
 # Flag for testing...
-DO_TEST = False
+DO_TEST = True
 
 # Log the environment...
 logging.info("Reading from {}/{} and writing to {}/{}".format(
@@ -70,7 +70,7 @@ logging.info("Getting items from the queue: {}".format(QUEUE))
 
 LIMIT = 9999
 if DO_TEST:
-    LIMIT = 10
+    LIMIT = 1
 
 # Set up some AWS stuff
 s3 = boto3.client('s3')
