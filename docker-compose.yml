@@ -12,7 +12,6 @@ services:
       - CLEANUP=True
       - OVERWRITE=False
       - UPLOAD=False
-      - IN_BUCKET=frontiersi-odc-data
       - LIMIT=1
     volumes:
       - .:/opt
