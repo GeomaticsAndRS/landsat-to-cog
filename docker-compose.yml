@@ -12,6 +12,6 @@ services:
       - CLEANUP=True
       - OVERWRITE=False
       - UPLOAD=True
-      - LIMIT=10
+      - LIMIT=3
     volumes:
       - .:/opt
