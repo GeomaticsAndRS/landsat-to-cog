@@ -11,7 +11,7 @@ services:
       - OUT_PATH=L5-Ghana_original
       - CLEANUP=True
       - OVERWRITE=False
-      - UPLOAD=False
-      - LIMIT=10
+      - UPLOAD=True
+      - LIMIT=3
     volumes:
       - .:/opt

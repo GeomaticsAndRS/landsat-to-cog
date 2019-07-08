@@ -58,7 +58,7 @@ DO_CLEANUP = DO_CLEANUP == "True"
 DO_UPLOAD = DO_UPLOAD == "True"
 
 # Flag for testing...
-DO_TEST = True
+DO_TEST = False
 
 # Log the environment...
 logging.info("Reading from {}/{} and writing to {}/{}".format(
