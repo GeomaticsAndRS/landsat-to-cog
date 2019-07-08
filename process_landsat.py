@@ -44,6 +44,10 @@ OUT_BUCKET = os.environ.get('OUT_BUCKET', 'test-results-deafrica-staging-west')
 OUT_PATH = os.environ.get('OUT_PATH', 'test')
 QUEUE = os.environ.get('QUEUE', 'dsg-test-queue')
 DLQUEUE = os.environ.get('QUEUE', 'l2c-dead-letter')
+VISIBILITYTIMEOUT = os.environ.get('VISIBILITYTIMEOUT', 1000)
+
+# FOR TESTING
+# VISIBILITYTIMEOUT = os.environ.get('VISIBILITYTIMEOUT', 40)
 
 # These probably don't need changing
 WORKDIR = os.environ.get('WORKDIR', 'data/download')
@@ -205,7 +209,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
     # Get next file
     file_to_process = None
     messages = queue.receive_messages(
-        VisibilityTimeout=1000,
+        VisibilityTimeout=VISIBILITYTIMEOUT,
         MaxNumberOfMessages=1
     )
     message = None
@@ -229,16 +233,27 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
 
     if not os.path.isfile(local_file_full):
         logging.info("Downloading file to {}".format(local_file_full))
-        s3r.Bucket(BUCKET).download_file(file_to_process, local_file_full)
+        #s3r.Bucket(BUCKET).download_file(file_to_process, local_file_full)
 
-        # try:
-        #     s3r.Bucket(BUCKET).download_file(file_to_process, local_file_full)
-        # except NotADirectoryError as e:
-        #     logging.error("Failed to download the Bucket: {}".format(BUCKET))
-        #     logging.error("Error: {}".format(e))
-        #     process_failed = True
-        #
-        #     # queue.send_message(MessageBody=item)
+        try:
+            s3r.Bucket(BUCKET).download_file(file_to_process, local_file_full)
+        except NotADirectoryError as e:
+            logging.error("Failed to download the Bucket: {}".format(BUCKET))
+            logging.error("Error: {}".format(e))
+            process_failed = True
+            dlqueue.send_message(MessageBody=message.body)
+            logging.warning("message moved to dead letter queue: {}".format(message.body))
+            cleanup = False   # do not clean up if there is nothing to clean up
+        except FileNotFoundError as e:
+            logging.warning("File Not Found: {}".format(file_to_process))
+            logging.warning("{}".format(e))
+            process_failed = True
+            dlqueue.send_message(MessageBody=message.body)
+            logging.warning("message moved to dead letter queue: {}".format(message.body))
+            cleanup = False   # do not clean up if there is nothing to clean up
+
+            # Create a big list of items we're processing.
+            # dlqueue.send_message(MessageBody=item)
     else:
         logging.info("File found locally, not downloading")
 
@@ -342,6 +357,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
             local_file
         ))
     message.delete()
+    logging.warning("message deleted from queue: {}".format(message.body))
 
 
 def get_items(LIMIT=10, filter=None):
