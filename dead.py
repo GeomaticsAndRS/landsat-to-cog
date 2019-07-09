@@ -16,7 +16,7 @@ import boto3
 import botocore
 
 QUEUE = os.environ.get('QUEUE', 'dsg-test-queue')
-DLQUEUE = os.environ.get('QUEUE', 'l2c-dead-letter')
+DLQUEUE = os.environ.get('DLQUEUE', 'l2c-dead-letter')
 
 
 # Set up some AWS stuff
