@@ -39,6 +39,7 @@ logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 
 # Sort out variables
 BUCKET = os.environ.get('IN_BUCKET', 'deafrica-staging-west')
+BUCKET = os.environ.get('IN_BUCKET', 'in-test-results-deafrica-staging-west')
 PATH = os.environ.get('IN_PATH', 'L5-Ghana_original')
 OUT_BUCKET = os.environ.get('OUT_BUCKET', 'test-results-deafrica-staging-west')
 OUT_PATH = os.environ.get('OUT_PATH', 'test')
@@ -243,14 +244,12 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
             process_failed = True
             dlqueue.send_message(MessageBody=message.body)
             logging.warning("message moved to dead letter queue: {}".format(message.body))
-            cleanup = False   # do not clean up if there is nothing to clean up
         except FileNotFoundError as e:
             logging.warning("File Not Found: {}".format(file_to_process))
             logging.warning("{}".format(e))
             process_failed = True
             dlqueue.send_message(MessageBody=message.body)
             logging.warning("message moved to dead letter queue: {}".format(message.body))
-            cleanup = False   # do not clean up if there is nothing to clean up
 
             # Create a big list of items we're processing.
             # dlqueue.send_message(MessageBody=item)
@@ -265,6 +264,8 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
         except RuntimeError as e:
             logging.error("Failed to untar the file with error: {}".format(e))
             process_failed = True
+            dlqueue.send_message(MessageBody=message.body)
+            logging.warning("message moved to dead letter queue: {}".format(message.body))
 
     # Handle metadata
     if not process_failed:
