@@ -43,7 +43,7 @@ PATH = os.environ.get('IN_PATH', 'L5-Ghana_original')
 OUT_BUCKET = os.environ.get('OUT_BUCKET', 'test-results-deafrica-staging-west')
 OUT_PATH = os.environ.get('OUT_PATH', 'test')
 QUEUE = os.environ.get('QUEUE', 'dsg-test-queue')
-DLQUEUE = os.environ.get('QUEUE', 'l2c-dead-letter')
+DLQUEUE = os.environ.get('DLQUEUE', 'l2c-dead-letter')
 VISIBILITYTIMEOUT = os.environ.get('VISIBILITYTIMEOUT', 1000)
 
 # FOR TESTING
