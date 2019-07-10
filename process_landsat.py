@@ -234,13 +234,12 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
 
     if not os.path.isfile(local_file_full):
         logging.info("Downloading file to {}".format(local_file_full))
-        #s3r.Bucket(BUCKET).download_file(file_to_process, local_file_full)
 
         try:
             s3r.Bucket(BUCKET).download_file(file_to_process, local_file_full)
         except NotADirectoryError as e:
-            logging.error("Failed to download the Bucket: {}".format(BUCKET))
-            logging.error("Error: {}".format(e))
+            logging.warning("Failed to download the Bucket: {}".format(BUCKET))
+            logging.warning("Error: {}".format(e))
             process_failed = True
             dlqueue.send_message(MessageBody=message.body)
             logging.warning("message moved to dead letter queue: {}".format(message.body))
@@ -262,7 +261,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
         try:
             run_command(['tar', '-xzvf', local_file], WORKDIR)
         except RuntimeError as e:
-            logging.error("Failed to untar the file with error: {}".format(e))
+            logging.warning("Failed to untar the file with error: {}".format(e))
             process_failed = True
             dlqueue.send_message(MessageBody=message.body)
             logging.warning("message moved to dead letter queue: {}".format(message.body))
@@ -358,7 +357,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
             local_file
         ))
     message.delete()
-    logging.warning("message deleted from queue: {}".format(message.body))
+    logging.info("message deleted from queue: {}".format(message.body))
 
 
 def get_items(LIMIT=10, filter=None):
