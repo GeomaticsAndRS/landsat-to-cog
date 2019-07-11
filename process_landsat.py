@@ -270,7 +270,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
     if not process_failed:
         xml_file = os.path.join(WORKDIR, get_xmlfile(WORKDIR))
         metadata = get_metadata(xml_file)
-        out_file_path = '{directory}/{satellite}/{path}/{row}/{date}'.format(
+        out_file_path = '{directory}/usgs/c1/{satellite}/{path}/{row}/{date}'.format(
             directory=OUT_PATH,
             satellite=metadata['satellite'],
             path=metadata['path'],
