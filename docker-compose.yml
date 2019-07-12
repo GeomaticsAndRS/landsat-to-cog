@@ -6,12 +6,12 @@ services:
       - AWS_DEFAULT_REGION=us-west-2
       - QUEUE=dsg-test-queue
       - IN_BUCKET=deafrica-staging-west
-      - IN_PATH=L5-Ghana_original
-      - OUT_BUCKET=test-results-deafrica-staging-west
-      - OUT_PATH=L5-Ghana_original
+      - IN_PATH=test
+      - OUT_BUCKET=deafrica-data
+      - OUT_PATH=test
       - CLEANUP=True
       - OVERWRITE=False
       - UPLOAD=True
-      - LIMIT=3
+      - LIMIT=25
     volumes:
       - .:/opt
