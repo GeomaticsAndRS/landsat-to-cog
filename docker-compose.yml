@@ -7,11 +7,11 @@ services:
       - QUEUE=dsg-test-queue
       - IN_BUCKET=deafrica-staging-west
       - IN_PATH=test
-      - OUT_BUCKET=deafrica-data
-      - OUT_PATH=test
+      - OUT_BUCKET=test-results-deafrica-staging-west
+      - OUT_PATH=L5-Ghana_original_k8s
       - CLEANUP=True
       - OVERWRITE=False
       - UPLOAD=True
-      - LIMIT=25
+      - LIMIT=5
     volumes:
       - .:/opt
