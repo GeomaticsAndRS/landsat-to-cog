@@ -29,11 +29,11 @@ spec:
         - name: IN_BUCKET
           value: "deafrica-staging-west"
         - name: IN_PATH
-          value: "L5-Ghana_original"
+          value: "rwanda_burundi_new"
         - name: OUT_BUCKET
-          value: "test-results-deafrica-staging-west"
+          value: "deafrica-data"
         - name: OUT_PATH
-          value: "L5-Ghana_original_k8s"
+          value: "rwanda_burundi_new"
         - name: QUEUE
           value: "dsg-test-queue"
         - name: DLQUEUE
