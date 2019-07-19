@@ -42,11 +42,10 @@ push:
 	docker build --tag crcsi/landsat-processor .
 	docker push crcsi/landsat-processor
 
-add-items:
-	AWS_DEFAULT_PROFILE=fsi-admin \
+add-items-rb:
+	AWS_DEFAULT_PROFILE=africa-eks \
 	AWS_DEFAULT_REGION=us-west-2 \
-	IN_BUCKET=frontiersi-odc-data \
-	IN_PATH=raw/fiji \
-	QUEUE=odc-sandbox-data-processing-queue \
-	LIMIT=10 \
+	IN_BUCKET= deafrica-staging-west\
+	IN_PATH=rwanda_burundi_new \
+	QUEUE=dsg-test-queue \
 	./add_to_queue.py
