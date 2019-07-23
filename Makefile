@@ -42,10 +42,19 @@ push:
 	docker build --tag geoscienceaustralia/landsat-to-cog_pygdal .
 	docker push geoscienceaustralia/landsat-to-cog_pygdal
 
-add-items-rb:
-	AWS_DEFAULT_PROFILE=africa-eks \
+add-items-L5-Ghana_original:
+	#AWS_DEFAULT_PROFILE=africa-eks 
 	AWS_DEFAULT_REGION=us-west-2 \
-	IN_BUCKET= deafrica-staging-west\
-	IN_PATH=rwanda_burundi_new \
+	IN_BUCKET=deafrica-staging-west \
+	IN_PATH=L5-Ghana_original \
 	QUEUE=dsg-test-queue \
+	LIMIT=705 \
 	./add_to_queue.py
+
+add-items-L5-Kenya_original:
+        AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=L5-Kenya_original \
+        QUEUE=dsg-test-queue \
+        LIMIT=2670 \
+        ./add_to_queue.py

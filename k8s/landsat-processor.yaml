@@ -5,7 +5,7 @@ metadata:
   labels:
     app: python-landsat-processor
 spec:
-  replicas: 20
+  replicas: 40
   selector:
     matchLabels:
       app: python-landsat-processor
@@ -29,11 +29,11 @@ spec:
         - name: IN_BUCKET
           value: "deafrica-staging-west"
         - name: IN_PATH
-          value: "rwanda_burundi_new"
+          value: "set-in-landsat-processor-do-not-use"
         - name: OUT_BUCKET
           value: "deafrica-data"
         - name: OUT_PATH
-          value: "rwanda_burundi_new"
+          value: "usgs/c1"
         - name: QUEUE
           value: "dsg-test-queue"
         - name: DLQUEUE

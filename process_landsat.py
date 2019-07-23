@@ -279,7 +279,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
         xml_file = os.path.join(WORKDIR, get_xmlfile(WORKDIR))
         metadata = get_metadata(xml_file)
         skey = metadata['satellite']
-        out_file_path = '{directory}/usgs/c1/{satellite}/{path}/{row}/{date}'.format(
+        out_file_path = '{directory}/{satellite}/{path}/{row}/{date}'.format(
             directory=OUT_PATH,
             satellite=relabel_satellite.get(skey, skey),
             path=metadata['path'],
