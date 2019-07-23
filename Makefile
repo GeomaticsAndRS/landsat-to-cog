@@ -52,7 +52,7 @@ add-items-L5-Ghana_original:
 	./add_to_queue.py
 
 add-items-L5-Kenya_original:
-        AWS_DEFAULT_REGION=us-west-2 \
+	AWS_DEFAULT_REGION=us-west-2 \
         IN_BUCKET=deafrica-staging-west \
         IN_PATH=L5-Kenya_original \
         QUEUE=dsg-test-queue \
