@@ -30,6 +30,14 @@ default_profile = {
     'zlevel': 9
 }
 
+relabel_satellite = {
+    'LANDSAT_5':'l5',
+    'LANDSAT_7':'l7',
+    'LANDSAT_8':'l8',
+}
+
+
+
 # Set us up some logging
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logging.getLogger('boto3').setLevel(logging.CRITICAL)
@@ -270,9 +278,10 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
     if not process_failed:
         xml_file = os.path.join(WORKDIR, get_xmlfile(WORKDIR))
         metadata = get_metadata(xml_file)
+        skey = metadata['satellite']
         out_file_path = '{directory}/usgs/c1/{satellite}/{path}/{row}/{date}'.format(
             directory=OUT_PATH,
-            satellite=metadata['satellite'],
+            satellite=relabel_satellite.get(skey, skey),
             path=metadata['path'],
             row=metadata['row'],
             date=metadata['datetime'].strftime("%Y/%m/%d")

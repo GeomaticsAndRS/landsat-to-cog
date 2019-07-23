@@ -39,8 +39,8 @@ test-example:
 		./process_landsat.py
 
 push:
-	docker build --tag crcsi/landsat-processor .
-	docker push crcsi/landsat-processor
+	docker build --tag geoscienceaustralia/landsat-to-cog_pygdal .
+	docker push geoscienceaustralia/landsat-to-cog_pygdal
 
 add-items-rb:
 	AWS_DEFAULT_PROFILE=africa-eks \
