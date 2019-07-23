@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import datetime
-import json
 import logging
 import os
 import re
@@ -100,6 +99,7 @@ def get_matching_s3_keys(bucket, prefix='', suffix=''):
         except KeyError:
             break
 
+
 def get_metadata(local_file):
     """
     Returns the pertinent fields in the XML file from USGS as a dict.
@@ -108,7 +108,6 @@ def get_metadata(local_file):
         xmlstring = f.read()
     xmlstring = re.sub(r'\sxmlns="[^"]+"', '', xmlstring, count=1)
     doc = ElementTree.fromstring(xmlstring)
-
 
     satellite = doc.find('.//satellite').text
     acquisition_date = doc.find('.//acquisition_date').text
@@ -151,10 +150,10 @@ def get_xmlfile(directory):
             return f
 
 
-def run_command(command, work_dir): 
-    """ 
-    A simple utility to execute a subprocess command. 
-    """ 
+def run_command(command, work_dir):
+    """
+    A simple utility to execute a subprocess command.
+    """
     try:
         subprocess.check_call(command, stderr=subprocess.STDOUT, cwd=work_dir)
     except subprocess.CalledProcessError as e:
@@ -174,8 +173,8 @@ def getfilename(fname, outdir):
     rel_path = check_dir(fname)
     out_fname = pjoin(outdir, rel_path)
 
-    if not os.path.exists(dirname(out_fname)): 
-        os.makedirs(dirname(out_fname)) 
+    if not os.path.exists(dirname(out_fname)):
+        os.makedirs(dirname(out_fname))
     return out_fname
 
 
@@ -248,9 +247,9 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
             path=metadata['path'],
             row=metadata['row'],
             date=metadata['datetime'].strftime("%Y/%m/%d")
-        ) 
+        )
         xml_key = "{}/{}".format(out_file_path, basename(xml_file))
-    
+
         # Check if we've already processed the file
         processed_already = check_processed(xml_key)
         if processed_already:
@@ -300,7 +299,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
                         key = "{}/{}".format(out_file_path, basename(out_file))
                         logging.info("Uploading geotiff to {}".format(key))
                         s3r.Bucket(OUT_BUCKET).put_object(Key=key, Body=data)
-                    
+
                     # Upload metadata
                     data = open(xml_file, 'rb')
                     logging.info("Uploading metadata file to {}".format(xml_key))
@@ -354,7 +353,7 @@ def count_messages():
     return int(queue.attributes["ApproximateNumberOfMessages"])
 
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     n_messages = count_messages()
     logging.info("Upload is: {}, Overwrite is: {}, Cleanup is: {}".format(
         DO_UPLOAD, DO_OVERWRITE, DO_CLEANUP
