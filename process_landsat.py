@@ -278,7 +278,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
                             resampling_mode = 'average'
                             src = rasterio.open(in_filename)
                             logging.info("NODATA is: {}".format(src.nodata))
-                            if src.nodata and src.nodata is not 'None':
+                            if src.nodata is not None:
                                 cog_profile['nodata'] = int(src.nodata)
 
                         cog_translate(
