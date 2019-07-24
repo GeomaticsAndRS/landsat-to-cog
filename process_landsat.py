@@ -270,13 +270,10 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
                         out_files.append(out_filename)
 
                         cog_profile = copy.deepcopy(default_profile)
+                        resampling_mode = 'mode' if '_qa' in fname else 'average'
 
-                        if '_qa' in fname:
-                            resampling_mode = 'mode'
-                        else:
-                            # Transfer NODATA over if it's not pixel QA (which has no nodata)
-                            resampling_mode = 'average'
-                            src = rasterio.open(in_filename)
+                        # Transfer NODATA over if defined
+                        with rasterio.open(in_filename) as src:
                             logging.info("NODATA is: {}".format(src.nodata))
                             if src.nodata is not None:
                                 cog_profile['nodata'] = int(src.nodata)
