@@ -58,3 +58,28 @@ add-items-L5-Kenya_original:
         QUEUE=dsg-test-queue \
         LIMIT=2670 \
         ./add_to_queue.py
+
+add-items-L5-Senegal_original:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=L5-Senegal_original \
+        QUEUE=dsg-test-queue \
+        LIMIT=1500 \
+        ./add_to_queue.py
+
+add-items-L5-SierraLeone_original:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=L5-SierraLeone_original \
+        QUEUE=dsg-test-queue \
+        LIMIT=340 \
+        ./add_to_queue.py
+
+
+add-items-L5-Tanzania_original:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=L5-Tanzania_original \
+        QUEUE=dsg-test-queue \
+        LIMIT=5650 \
+        ./add_to_queue.py
