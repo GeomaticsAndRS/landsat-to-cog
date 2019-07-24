@@ -5,34 +5,43 @@ metadata:
   labels:
     app: python-landsat-processor
 spec:
-  replicas: 2
+  replicas: 40
   selector:
     matchLabels:
       app: python-landsat-processor
   template:
     metadata:
+      annotations:
+        iam.amazonaws.com/role: deafrica-ec2-s3_access
       labels:
         app: python-landsat-processor
     spec:
       nodeSelector:
-        kops.k8s.io/instancegroup: spot-nodes1
+        beta.kubernetes.io/os: linux
+        #kops.k8s.io/instancegroup: spot-nodes1
       containers:
       - name: landsat-processor
-        image: crcsi/landsat-processor
+        image: geoscienceaustralia/landsat-to-cog_pygdal
+        #image: crcsi/landsat-processor
         env:
         - name: AWS_DEFAULT_REGION
           value: us-west-2
         - name: IN_BUCKET
-          value: "frontiersi-odc-data"
+          value: "deafrica-staging-west"
         - name: IN_PATH
-          value: "raw/fiji"
+          value: "set-in-landsat-processor-do-not-use"
         - name: OUT_BUCKET
-          value: "frontiersi-odc-data"
+          value: "deafrica-data"
         - name: OUT_PATH
-          value: "test"
+          value: "usgs/c1"
         - name: QUEUE
-          value: "odc-sandbox-data-processing-queue"
+          value: "dsg-test-queue"
+        - name: DLQUEUE
+          value: "l2c-dead-letter"
         - name: CLEANUP
           value: "True"
         - name: UPLOAD
           value: "True"
+#        - name: AWS_ACCESS_KEY_ID
+#          value: "dummy-key"
+

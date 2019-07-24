@@ -5,7 +5,7 @@ import os
 from process_landsat import get_items
 
 
-LIMIT = int(os.environ.get('LIMIT', 10))
+LIMIT = int(os.environ.get('LIMIT', 3))
 
 if __name__ == "__main__":
     get_items(LIMIT=LIMIT)

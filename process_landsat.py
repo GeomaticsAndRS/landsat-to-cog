@@ -29,6 +29,14 @@ default_profile = {
     'zlevel': 9
 }
 
+relabel_satellite = {
+    'LANDSAT_5':'l5',
+    'LANDSAT_7':'l7',
+    'LANDSAT_8':'l8',
+}
+
+
+
 # Set us up some logging
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 logging.getLogger('boto3').setLevel(logging.CRITICAL)
@@ -37,11 +45,17 @@ logging.getLogger('s3transfer').setLevel(logging.CRITICAL)
 logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 
 # Sort out variables
-BUCKET = os.environ.get('IN_BUCKET', 'frontiersi-odc-test')
-PATH = os.environ.get('IN_PATH', '')
-OUT_BUCKET = os.environ.get('OUT_BUCKET', BUCKET)
+BUCKET = os.environ.get('IN_BUCKET', 'deafrica-staging-west')
+BUCKET = os.environ.get('IN_BUCKET', 'in-test-results-deafrica-staging-west')
+PATH = os.environ.get('IN_PATH', 'L5-Ghana_original')
+OUT_BUCKET = os.environ.get('OUT_BUCKET', 'test-results-deafrica-staging-west')
 OUT_PATH = os.environ.get('OUT_PATH', 'test')
-QUEUE = os.environ.get('QUEUE', 'landsat-to-cog-queue-test')
+QUEUE = os.environ.get('QUEUE', 'dsg-test-queue')
+DLQUEUE = os.environ.get('DLQUEUE', 'l2c-dead-letter')
+VISIBILITYTIMEOUT = os.environ.get('VISIBILITYTIMEOUT', 1000)
+
+# FOR TESTING
+# VISIBILITYTIMEOUT = os.environ.get('VISIBILITYTIMEOUT', 40)
 
 # These probably don't need changing
 WORKDIR = os.environ.get('WORKDIR', 'data/download')
@@ -66,10 +80,11 @@ logging.info("Reading from {}/{} and writing to {}/{}".format(
     OUT_PATH
 ))
 logging.info("Getting items from the queue: {}".format(QUEUE))
+logging.info("Dead letter queue is: {}".format(DLQUEUE))
 
 LIMIT = 9999
 if DO_TEST:
-    LIMIT = 10
+    LIMIT = 1
 
 # Set up some AWS stuff
 s3 = boto3.client('s3')
@@ -77,6 +92,7 @@ s3 = boto3.client('s3')
 s3r = boto3.resource('s3')
 sqs = boto3.resource('sqs')
 queue = sqs.get_queue_by_name(QueueName=QUEUE)
+dlqueue = sqs.get_queue_by_name(QueueName=DLQUEUE)
 
 
 def get_matching_s3_keys(bucket, prefix='', suffix=''):
@@ -201,7 +217,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
     # Get next file
     file_to_process = None
     messages = queue.receive_messages(
-        VisibilityTimeout=1000,
+        VisibilityTimeout=VISIBILITYTIMEOUT,
         MaxNumberOfMessages=1
     )
     message = None
@@ -225,25 +241,46 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
 
     if not os.path.isfile(local_file_full):
         logging.info("Downloading file to {}".format(local_file_full))
-        s3r.Bucket(BUCKET).download_file(file_to_process, local_file_full)
+
+        try:
+            s3r.Bucket(BUCKET).download_file(file_to_process, local_file_full)
+        except NotADirectoryError as e:
+            logging.warning("Failed to download the Bucket: {}".format(BUCKET))
+            logging.warning("Error: {}".format(e))
+            process_failed = True
+            dlqueue.send_message(MessageBody=message.body)
+            logging.warning("message moved to dead letter queue: {}".format(message.body))
+        except FileNotFoundError as e:
+            logging.warning("File Not Found: {}".format(file_to_process))
+            logging.warning("{}".format(e))
+            process_failed = True
+            dlqueue.send_message(MessageBody=message.body)
+            logging.warning("message moved to dead letter queue: {}".format(message.body))
+
+            # Create a big list of items we're processing.
+            # dlqueue.send_message(MessageBody=item)
     else:
         logging.info("File found locally, not downloading")
 
-    # Unzip the file
-    logging.info("Unzipping the file {} into {}".format(local_file, WORKDIR))
-    try:
-        run_command(['tar', '-xzvf', local_file], WORKDIR)
-    except RuntimeError as e:
-        logging.error("Failed to untar the file with error: {}".format(e))
-        process_failed = True
+    if not process_failed:
+        # Unzip the file
+        logging.info("Unzipping the file {} into {}".format(local_file, WORKDIR))
+        try:
+            run_command(['tar', '-xzvf', local_file], WORKDIR)
+        except RuntimeError as e:
+            logging.warning("Failed to untar the file with error: {}".format(e))
+            process_failed = True
+            dlqueue.send_message(MessageBody=message.body)
+            logging.warning("message moved to dead letter queue: {}".format(message.body))
 
     # Handle metadata
     if not process_failed:
         xml_file = os.path.join(WORKDIR, get_xmlfile(WORKDIR))
         metadata = get_metadata(xml_file)
+        skey = metadata['satellite']
         out_file_path = '{directory}/{satellite}/{path}/{row}/{date}'.format(
             directory=OUT_PATH,
-            satellite=metadata['satellite'],
+            satellite=relabel_satellite.get(skey, skey),
             path=metadata['path'],
             row=metadata['row'],
             date=metadata['datetime'].strftime("%Y/%m/%d")
@@ -328,6 +365,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
             local_file
         ))
     message.delete()
+    logging.info("message deleted from queue: {}".format(message.body))
 
 
 def get_items(LIMIT=10, filter=None):
