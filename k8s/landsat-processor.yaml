@@ -19,6 +19,15 @@ spec:
       nodeSelector:
         beta.kubernetes.io/os: linux
         #kops.k8s.io/instancegroup: spot-nodes1
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nodetype
+                    operator: In
+                    values:
+                      - spot
       containers:
       - name: landsat-processor
         image: geoscienceaustralia/landsat-to-cog_pygdal
