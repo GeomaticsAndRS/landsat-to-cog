@@ -23,6 +23,12 @@ spec:
       - name: landsat-processor
         image: geoscienceaustralia/landsat-to-cog_pygdal
         #image: crcsi/landsat-processor
+        resources:
+          requests:
+            cpu: 1
+            memory: 2048Mi
+          limits:
+            memory: 2048Mi
         env:
         - name: AWS_DEFAULT_REGION
           value: us-west-2
