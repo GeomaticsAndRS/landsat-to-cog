@@ -42,8 +42,16 @@ push:
 	docker build --tag geoscienceaustralia/landsat-to-cog_pygdal .
 	docker push geoscienceaustralia/landsat-to-cog_pygdal
 
+add-items-test:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=L5-Ghana_original \
+        QUEUE=dsg-test-queue \
+        LIMIT=5 \
+        ./add_to_queue.py
+
+
 add-items-L5-Ghana_original:
-	#AWS_DEFAULT_PROFILE=africa-eks 
 	AWS_DEFAULT_REGION=us-west-2 \
 	IN_BUCKET=deafrica-staging-west \
 	IN_PATH=L5-Ghana_original \
@@ -75,11 +83,26 @@ add-items-L5-SierraLeone_original:
         LIMIT=340 \
         ./add_to_queue.py
 
-
 add-items-L5-Tanzania_original:
 	AWS_DEFAULT_REGION=us-west-2 \
         IN_BUCKET=deafrica-staging-west \
         IN_PATH=L5-Tanzania_original \
         QUEUE=dsg-test-queue \
         LIMIT=5650 \
+        ./add_to_queue.py
+
+add-items-rwanda_burundi_new:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=rwanda_burundi_new \
+        QUEUE=dsg-test-queue \
+        LIMIT=5650 \
+        ./add_to_queue.py
+
+add-items-L7-Tanzania_original2:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=L7-Tanzania_original2 \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
         ./add_to_queue.py
