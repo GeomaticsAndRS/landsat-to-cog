@@ -5,7 +5,7 @@ metadata:
   labels:
     app: python-landsat-processor
 spec:
-  replicas: 40
+  replicas: 240
   selector:
     matchLabels:
       app: python-landsat-processor

@@ -106,3 +106,92 @@ add-items-L7-Tanzania_original2:
         QUEUE=dsg-test-queue \
         LIMIT=99999 \
         ./add_to_queue.py
+
+add-items-ARDC-L7Ghana_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L7Ghana_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-ARDC-L7Kenya_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L7Kenya_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-ARDC-L7Senegal_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L7Senegal_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-ARDC-L7SierraLeone_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L7SierraLeone_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-ARDC-L7Tanzania_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L7Tanzania_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-ARDC-L8Ghanna_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L8Ghanna_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-ARDC-L8Kenga_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L8Kenya_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-ARDC-L8Senegal_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L8Senegal_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-ARDC-L8SierraLeone_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L8SierraLeone_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-ARDC-L8Tanzania_Original_Data:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=ARDC-L8Tanzania_Original_Data \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
+add-items-cape-verde:
+	AWS_DEFAULT_REGION=us-west-2 \
+        IN_BUCKET=deafrica-staging-west \
+        IN_PATH=from_frontiersi/cape-verde \
+        QUEUE=dsg-test-queue \
+        LIMIT=99999 \
+        ./add_to_queue.py
+
