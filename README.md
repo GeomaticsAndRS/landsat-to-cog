@@ -12,6 +12,9 @@ Also, this repository defines Docker and Kubernetes components to support the co
 
 ---
 ## Application Architecture
+<!---
+This image was created using https://www.draw.io/. Thanks for your help Tom.
+-->
 
 ![application-architecture](img/orchestration-app.png)
 
@@ -27,12 +30,18 @@ A kubenetes deployment configuration is used to set-up the main process. An exam
  `k8s\user-africa-dev-pod.yaml`. The deployment can be managed using `Kubectl`, the
  Kubernetes command line interface. The table below gives examples of useful `Kubectl` commands.
 
+<!---
+https://www.tablesgenerator.com/markdown_tables#
+-->
 
-| Action                     | Command                                                 |
-|----------------------------|---------------------------------------------------------|
-| Create                     | `kubectl create -f user-africa-dev-pod.yaml`            |
-| Delete                     | `kubectl delete -f user-africa-dev-pod.yaml`            |
-| Monitor                    | `kubectl get pods`                                      |
-| Get logs                   | `kubectl logs -f africa-frak-deployment-fcb56b69c-xlvl` |
-| Change # of  deployed pods | `kubectl scale deployment africa-frak-deployment`       |
-|                            |                                                         |
+| Action                     | Command                                                         |
+|----------------------------|-----------------------------------------------------------------|
+| Create                     | `kubectl create -f user-africa-dev-pod.yaml`                    |
+| Delete                     | `kubectl delete -f user-africa-dev-pod.yaml`                    |
+| Monitor                    | `kubectl get pods`                                              |
+| Get logs                   | `kubectl logs -f africa-frak-deployment-fcb56b69c-xlvl`         |
+| Change # of  deployed pods | `kubectl scale deployment africa-frak-deployment --replicas=51` |
+
+So firstly create the deployment to process the jobs.  Monitor it via the Kubernetes command line interface
+and the SQS AWS page.
+Scale up the deployment to meet demand. When the message queue has been processed the deployment can be deleted.
