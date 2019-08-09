@@ -1,7 +1,8 @@
 # Landsat-to-cog
 This converts zipped USGS landsat data to cloud optimised geotiffs (COGs)
  using AWS infrastructure.
-Also, this repository defines Docker and Kubernetes components to support the conversion.
+Additionally, this repository defines Docker and Kubernetes components to support the conversion.
+The Kubernetes configuration is specifc to DEAfrica.
 
 ---
 ## Requirements
@@ -42,6 +43,10 @@ https://www.tablesgenerator.com/markdown_tables#
 | Get logs                   | `kubectl logs -f africa-frak-deployment-fcb56b69c-xlvl`         |
 | Change # of  deployed pods | `kubectl scale deployment africa-frak-deployment --replicas=51` |
 
-So firstly create the deployment to process the jobs.  Monitor it via the Kubernetes command line interface
+Firstly create the deployment to process the jobs.  Monitor it via the Kubernetes command line interface
 and the SQS AWS page.
 Scale up the deployment to meet demand. When the message queue has been processed the deployment can be deleted.
+
+## Troubleshooting
+The deployment `k8s/k8s.yaml` is used to deploy a pod that can be connected to with
+`kubectl exec -it user-africa-dev-pod  -- /bin/bash`.
