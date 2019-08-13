@@ -21,15 +21,15 @@ spec:
         secretKeyRef:
           name: africa-datacube
           key: postgres-password
-    - name: DB_USERNAME_DEAFRICA
+    - name: ADMIN_USERNAME
       valueFrom:
         secretKeyRef:
-          name: deafrica-datacube
+          name: deafrica-eks
           key: postgres-username
-    - name: DB_PASSWORD_DEAFRICA
+    - name: ADMIN_PASSWORD
       valueFrom:
         secretKeyRef:
-          name: deafrica-datacube
+          name: deafrica-eks
           key: postgres-password
     - name: DATACUBE_CONFIG_PATH
       value: "/opt/custom-config.conf" 
