@@ -13,9 +13,9 @@ logging.getLogger('s3transfer').setLevel(logging.CRITICAL)
 logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 
 
-QUEUE = os.environ.get('QUEUE', 'dsg-test-queue')
+QUEUE = os.environ.get('QUEUE', 'collection-2-nigeria')
 #QUEUE = os.environ.get('QUEUE', 'landsat-to-wofs')
-DLQUEUE = os.environ.get('DLQUEUE', 'l2c-dead-letter')
+DLQUEUE = os.environ.get('DLQUEUE', 'collection-2-nigera-dlq')
 #DLQUEUE = os.environ.get('DLQUEUE', 'landsat-to-wofs-deadletter')
 
 # Set up some AWS stuff
