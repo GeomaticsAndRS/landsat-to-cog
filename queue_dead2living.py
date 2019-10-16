@@ -29,12 +29,13 @@ dlqueue = sqs.get_queue_by_name(QueueName=DLQUEUE)
 def dead2living():
     messages = dlqueue.receive_messages(
         VisibilityTimeout=10,
-        MaxNumberOfMessages=1
+        MaxNumberOfMessages=1,
+        MessageAttributeNames=['All']
     )
     if not messages:
         return
     message = messages[0]
-    queue.send_message(MessageBody=message.body)
+    queue.send_message(MessageBody=message.body, MessageAttributes=message.message_attributes)
     logging.info("Message is {}.".format(message.body))
     message.delete()
     time.sleep(.300)
