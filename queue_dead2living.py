@@ -13,10 +13,12 @@ logging.getLogger('s3transfer').setLevel(logging.CRITICAL)
 logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 
 
-QUEUE = os.environ.get('QUEUE', 'collection-2-nigeria')
 #QUEUE = os.environ.get('QUEUE', 'landsat-to-wofs')
-DLQUEUE = os.environ.get('DLQUEUE', 'collection-2-nigera-dlq')
+#QUEUE = os.environ.get('QUEUE', 'collection-2-nigeria')
+QUEUE = os.environ.get('QUEUE', 'alchemist-standard')
 #DLQUEUE = os.environ.get('DLQUEUE', 'landsat-to-wofs-deadletter')
+#DLQUEUE = os.environ.get('DLQUEUE', 'collection-2-nigera-dlq')
+DLQUEUE = os.environ.get('DLQUEUE', 'alchemist-standard-dl')
 
 # Set up some AWS stuff
 s3 = boto3.client('s3')
@@ -35,7 +37,12 @@ def dead2living():
     if not messages:
         return
     message = messages[0]
-    queue.send_message(MessageBody=message.body, MessageAttributes=message.message_attributes)
+    if message.message_attributes:
+        messatts = message.message_attributes
+    else:
+        messatts = {}
+        
+    queue.send_message(MessageBody=message.body, MessageAttributes=messatts) #message.message_attributes)
     logging.info("Message is {}.".format(message.body))
     message.delete()
     time.sleep(.300)
