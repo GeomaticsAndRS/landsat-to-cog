@@ -30,12 +30,10 @@ default_profile = {
 }
 
 relabel_satellite = {
-    'LANDSAT_5':'l5',
-    'LANDSAT_7':'l7',
-    'LANDSAT_8':'l8',
+    'LANDSAT_5': 'l5',
+    'LANDSAT_7': 'l7',
+    'LANDSAT_8': 'l8',
 }
-
-
 
 # Set us up some logging
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
@@ -51,7 +49,6 @@ PATH = os.environ.get('IN_PATH', 'L5-Ghana_original')
 OUT_BUCKET = os.environ.get('OUT_BUCKET', 'test-results-deafrica-staging-west')
 OUT_PATH = os.environ.get('OUT_PATH', 'test')
 QUEUE = os.environ.get('QUEUE', 'dsg-test-queue')
-DLQUEUE = os.environ.get('DLQUEUE', 'l2c-dead-letter')
 VISIBILITYTIMEOUT = os.environ.get('VISIBILITYTIMEOUT', 1000)
 
 # FOR TESTING
@@ -80,7 +77,6 @@ logging.info("Reading from {}/{} and writing to {}/{}".format(
     OUT_PATH
 ))
 logging.info("Getting items from the queue: {}".format(QUEUE))
-logging.info("Dead letter queue is: {}".format(DLQUEUE))
 
 LIMIT = 9999
 if DO_TEST:
@@ -92,7 +88,6 @@ s3 = boto3.client('s3')
 s3r = boto3.resource('s3')
 sqs = boto3.resource('sqs')
 queue = sqs.get_queue_by_name(QueueName=QUEUE)
-dlqueue = sqs.get_queue_by_name(QueueName=DLQUEUE)
 
 
 def get_matching_s3_keys(bucket, prefix='', suffix=''):
@@ -248,17 +243,10 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
             logging.warning("Failed to download the Bucket: {}".format(BUCKET))
             logging.warning("Error: {}".format(e))
             process_failed = True
-            dlqueue.send_message(MessageBody=message.body)
-            logging.warning("message moved to dead letter queue: {}".format(message.body))
         except FileNotFoundError as e:
             logging.warning("File Not Found: {}".format(file_to_process))
             logging.warning("{}".format(e))
             process_failed = True
-            dlqueue.send_message(MessageBody=message.body)
-            logging.warning("message moved to dead letter queue: {}".format(message.body))
-
-            # Create a big list of items we're processing.
-            # dlqueue.send_message(MessageBody=item)
     else:
         logging.info("File found locally, not downloading")
 
@@ -270,8 +258,6 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
         except RuntimeError as e:
             logging.warning("Failed to untar the file with error: {}".format(e))
             process_failed = True
-            dlqueue.send_message(MessageBody=message.body)
-            logging.warning("message moved to dead letter queue: {}".format(message.body))
 
     # Handle metadata
     if not process_failed:
