@@ -4,14 +4,15 @@ services:
     build: .
     environment:
       - AWS_DEFAULT_REGION=us-west-2
-      - QUEUE=dsg-test-queue
+      - QUEUE=alex-alive-queue
       - IN_BUCKET=deafrica-staging-west
-      - IN_PATH=rwanda_burundi_new
-      - OUT_BUCKET=deafrica-data
-      - OUT_PATH=rwanda_burundi_new
+      - IN_PATH=ama20200207
+      - OUT_BUCKET=deafrica-data-dev
+      - OUT_PATH=ama_test_2020
       - CLEANUP=True
       - OVERWRITE=False
       - UPLOAD=True
-      - LIMIT=4000
+      - LIMIT=10
     volumes:
       - .:/opt
+      - ~/.aws/credentials:/root/.aws/credentials

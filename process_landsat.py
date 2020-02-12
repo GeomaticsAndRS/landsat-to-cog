@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import copy
 import datetime
 import logging
 import os
@@ -9,11 +10,11 @@ import subprocess
 from os.path import basename, dirname
 from os.path import join as pjoin
 from xml.etree import ElementTree
-import copy
 
 import boto3
 import botocore
 import rasterio
+from botocore.exceptions import ClientError
 
 from cogeo import cog_translate
 
@@ -166,23 +167,17 @@ def run_command(command, work_dir):
     A simple utility to execute a subprocess command.
     """
     try:
-        subprocess.check_call(command, stderr=subprocess.STDOUT, cwd=work_dir)
+        subprocess.check_call(command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=work_dir)
     except subprocess.CalledProcessError as e:
-        raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
-
-
-def check_dir(fname):
-    file_name = fname.split('/')
-    rel_path = pjoin(*file_name[-2:])
-    return rel_path
+        raise RuntimeError("command '{}' return with error (code {}): {}".format(
+            e.cmd, e.returncode, e.output))
 
 
 def getfilename(fname, outdir):
     """ To create a temporary filename to add overviews and convert to COG
         and create a file name just as source but without '.TIF' extension
     """
-    rel_path = check_dir(fname)
-    out_fname = pjoin(outdir, rel_path)
+    out_fname = pjoin(outdir, os.path.basename(fname))
 
     if not os.path.exists(dirname(out_fname)):
         os.makedirs(dirname(out_fname))
@@ -256,7 +251,7 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
         try:
             run_command(['tar', '-xzvf', local_file], WORKDIR)
         except RuntimeError as e:
-            logging.warning("Failed to untar the file with error: {}".format(e))
+            logging.error("Failed to untar the file with error: {}".format(e))
             process_failed = True
 
     # Handle metadata
@@ -288,7 +283,6 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
                 for fname in files:
                     if fname.endswith('.tif') and ('_sr_' in fname or '_qa' in fname):
                         in_filename = os.path.join(path, fname)
-                        logging.info("Reading %s", basename(in_filename))
                         out_filename = getfilename(in_filename, output_dir)
                         out_files.append(out_filename)
 
@@ -297,7 +291,6 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
 
                         # Transfer NODATA over if defined
                         with rasterio.open(in_filename) as src:
-                            logging.info("NODATA is: {}".format(src.nodata))
                             if src.nodata is not None:
                                 cog_profile['nodata'] = int(src.nodata)
 
@@ -309,24 +302,35 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
                             overview_resampling=resampling_mode
                         )
 
-                        # _write_cogtiff(f_name, filename, output_dir)
-                        count = count+1
+                        # Check the file... just in case we're borking it
+                        try:
+                            logging.info("Checking file")
+                            run_command(['gdalinfo', '-checksum', out_filename], WORKDIR)
+                        except RuntimeError as e:
+                            logging.error("gdalinfo -checksum failed wit herror: {}".format(e))
+                            process_failed = True
+                            break
+
+                        count = count + 1
                         logging.info("Writing COG number {} to {}".format(count, dirname(out_filename)))
 
             # If all went well, upload everything
             if len(out_files) >= 7:
                 if upload:
-                    # Upload data
-                    for out_file in out_files:
-                        data = open(out_file, 'rb')
-                        key = "{}/{}".format(out_file_path, basename(out_file))
-                        logging.info("Uploading geotiff to {}".format(key))
-                        s3r.Bucket(OUT_BUCKET).put_object(Key=key, Body=data)
+                    try:
+                        # Upload data
+                        for out_file in out_files:
+                            key = "{}/{}".format(out_file_path, basename(out_file))
+                            logging.info("Uploading geotiff to {}".format(key))
+                            s3.upload_file(out_file, OUT_BUCKET, key)
 
-                    # Upload metadata
-                    data = open(xml_file, 'rb')
-                    logging.info("Uploading metadata file to {}".format(xml_key))
-                    s3r.Bucket(OUT_BUCKET).put_object(Key=xml_key, Body=data)
+                        # Upload metadata
+                        logging.info("Uploading metadata file to {}".format(xml_key))
+                        s3.upload_file(xml_file, OUT_BUCKET, xml_key)
+
+                    except ClientError as e:
+                        logging.error(e)
+                        process_failed = True
                 else:
                     logging.warning("DO_UPLOAD is false, not uploading.")
             else:
@@ -346,12 +350,13 @@ def process_one(overwrite=False, cleanup=False, test=False, upload=True):
     # And we're finished
     if not process_failed:
         logging.info("Finished processing and now deleting the message.")
+        message.delete()
+        logging.info("message deleted from queue: {}".format(message.body))
+
     else:
-        logging.warning("The process to download {} FAILED!".format(
+        logging.error("Processing {} FAILED!".format(
             local_file
         ))
-    message.delete()
-    logging.info("message deleted from queue: {}".format(message.body))
 
 
 def get_items(LIMIT=10, filter=None):

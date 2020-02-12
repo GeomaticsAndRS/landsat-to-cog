@@ -5,7 +5,7 @@ metadata:
   labels:
     app: python-landsat-processor
 spec:
-  replicas: 240
+  replicas: 200
   selector:
     matchLabels:
       app: python-landsat-processor
@@ -18,7 +18,6 @@ spec:
     spec:
       nodeSelector:
         beta.kubernetes.io/os: linux
-        #kops.k8s.io/instancegroup: spot-nodes1
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -30,8 +29,7 @@ spec:
                       - spot
       containers:
       - name: landsat-processor
-        image: geoscienceaustralia/landsat-to-cog_pygdal
-        #image: crcsi/landsat-processor
+        image: alexgleith/landsat-to-cog
         resources:
           requests:
             cpu: 1
@@ -44,19 +42,16 @@ spec:
         - name: IN_BUCKET
           value: "deafrica-staging-west"
         - name: IN_PATH
-          value: "set-in-landsat-processor-do-not-use"
+          value: "ama20200207"
         - name: OUT_BUCKET
           value: "deafrica-data"
         - name: OUT_PATH
           value: "usgs/c1"
         - name: QUEUE
-          value: "dsg-test-queue"
+          value: "alex-alive-queue"
         - name: DLQUEUE
-          value: "l2c-dead-letter"
+          value: "alex-dead-letter"
         - name: CLEANUP
           value: "True"
         - name: UPLOAD
           value: "True"
-#        - name: AWS_ACCESS_KEY_ID
-#          value: "dummy-key"
-

@@ -1,4 +1,4 @@
-FROM geographica/gdal2:2.3.2
+FROM osgeo/gdal
 
 RUN apt-get update && apt-get install -y python3 python3-pip
 
